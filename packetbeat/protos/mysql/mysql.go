@@ -9,6 +9,7 @@ import (
 
 	"github.com/elastic/beats/libbeat/common"
 	"github.com/elastic/beats/libbeat/logp"
+	"github.com/percona/go-mysql/query"
 
 	"github.com/elastic/beats/packetbeat/procs"
 	"github.com/elastic/beats/packetbeat/protos"
@@ -120,6 +121,8 @@ type mysqlPlugin struct {
 	sendRequest  bool
 	sendResponse bool
 
+	queryFingerprint bool
+
 	transactions       *common.Cache
 	transactionTimeout time.Duration
 
@@ -173,6 +176,7 @@ func (mysql *mysqlPlugin) setFromConfig(config *mysqlConfig) {
 	mysql.sendRequest = config.SendRequest
 	mysql.sendResponse = config.SendResponse
 	mysql.transactionTimeout = config.TransactionTimeout
+	mysql.queryFingerprint = config.QueryFinderprint
 }
 
 func (mysql *mysqlPlugin) getTransaction(k common.HashableTCPTuple) *mysqlTransaction {
@@ -848,7 +852,20 @@ func (mysql *mysqlPlugin) publishTransaction(t *mysqlTransaction) {
 		event["response"] = t.responseRaw
 	}
 	event["method"] = t.method
-	event["query"] = t.query
+
+	fingerprint := query.Fingerprint(t.query)
+	queryID := query.Id(fingerprint)
+
+	if mysql.queryFingerprint {
+		event["query"] = fingerprint
+		event["queryRaw"] = t.query
+		event["fingerprintID"] = queryID
+	} else {
+		event["query"] = t.query
+		event["fingerprint"] = fingerprint
+		event["fingerprintID"] = queryID
+	}
+
 	event["mysql"] = t.mysql
 	event["path"] = t.path
 	event["bytes_out"] = t.bytesOut
