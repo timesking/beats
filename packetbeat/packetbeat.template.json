@@ -1083,7 +1083,19 @@
             "query": {
               "ignore_above": 1024,
               "type": "keyword"
-            }
+            },
+            "queryRaw": {
+              "ignore_above": 1024,
+              "type": "keyword"
+            },            
+            "fingerprint": {
+              "ignore_above": 1024,
+              "type": "keyword"
+            },
+            "fingerprintID": {
+              "ignore_above": 1024,
+              "type": "keyword"
+            }   
           }
         },
         "nfs": {
